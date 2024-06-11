@@ -1,4 +1,8 @@
 streamlit
+scikit-learn==1.2.2
+pandas
+numpy
+matplotlib
 opencv-python==4.5.3.56
 numpy==1.21.0
 tensorflow==2.5.0
