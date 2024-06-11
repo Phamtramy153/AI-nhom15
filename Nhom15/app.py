@@ -3,19 +3,26 @@ import numpy as np
 from tensorflow.keras.models import load_model
 import streamlit as st
 
-def adjust_brightness_and_resize(img, target_size=(28, 28)):
-    img_array = np.asarray(bytearray(img.read()), dtype=np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+def preprocess_image(img, target_size=(28, 28)):
+    # Chuyển đổi ảnh thành ảnh xám
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
+    # Tính giá trị trung bình của ảnh xám
     avg_pixel_value = np.mean(gray_img)
     
-    if avg_pixel_value > 127:
+    # Xác định xem nền của ảnh có gần màu trắng không (nền là màu sáng)
+    if avg_pixel_value > 120:  # Điều kiện có thể thay đổi tùy thuộc vào ngưỡng màu sáng bạn muốn
+        # Đảo ngược màu ảnh nhị phân
         inverted_img = cv2.bitwise_not(gray_img)
     else:
         inverted_img = gray_img
     
-    resized_img = cv2.resize(inverted_img, target_size)
+    # Áp dụng Thresholding để chuyển đổi thành ảnh nhị phân
+    _, binary_img = cv2.threshold(inverted_img, 127, 255, cv2.THRESH_BINARY)
+    
+    # Chuẩn hoá kích thước ảnh
+    resized_img = cv2.resize(binary_img, target_size)
+    
     return resized_img
 
 # Load model
@@ -73,8 +80,16 @@ def main():
         st.image(uploaded_file, caption='Ảnh đã tải lên', use_column_width=False, width=200)
         st.markdown("</div>", unsafe_allow_html=True)
         
-        adjusted_img = adjust_brightness_and_resize(uploaded_file)
-        input_data = np.expand_dims(adjusted_img, axis=(0, -1)) / 255.0
+        # Đọc ảnh từ file và chuyển thành mảng numpy
+        image = cv2.imdecode(np.frombuffer(uploaded_file.read(), np.uint8), 1)
+        
+        # Tiền xử lý ảnh
+        preprocessed_img = preprocess_image(image)
+        
+        # Hiển thị ảnh đã tiền xử lý
+        st.image(preprocessed_img, caption='Ảnh sau khi tiền xử lý', use_column_width=False, width=200)
+        
+        input_data = np.expand_dims(preprocessed_img, axis=(0, -1)) / 255.0
         
         with st.spinner('Predicting...'):
             prediction = model.predict(input_data)
