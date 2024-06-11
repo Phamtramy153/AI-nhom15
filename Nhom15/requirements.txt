@@ -6,4 +6,5 @@ matplotlib
 opencv-python
 numpy
 tensorflow
+cv2
 
